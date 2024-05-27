@@ -1,7 +1,6 @@
 import React, { useContext, useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 
-import TreeNodeComponent from "./TreeNode";
 import { TreeNode } from "./utils/generateNode";
 import { StoreContext } from "./Store";
 import { MAX_LEVEL } from "./App";
@@ -13,18 +12,19 @@ export interface SelectedLabelsProps {
 
 const SelectedLabels = () => {
     // context
-    const { nodesData } = useContext(StoreContext);
+    
+    const { newNodesData } = useContext(StoreContext);
     
     const labels = useMemo(() => {
-        return nodesData.filter(node => node.level >= MAX_LEVEL - 2)
+        return newNodesData.filter(node => node.level >= MAX_LEVEL - 2)
         .map(node => {
-            if (node.level === MAX_LEVEL - 1) {
+            if (node.children?.length !== node?.totalChildren) {
                 return (
                     <View key={node?.id} style={styles.selectedContainer}>
-                        <Text>{node.name}</Text>
+                        <Text>{node.name}: {node?.children?.map((item => `${item?.name}, `))}</Text>
                     </View>
                 );
-            } else if (node.level === MAX_LEVEL - 2) {
+            } else {
                 return (
                     <View key={node?.id} style={styles.selectedContainer}>
                         <Text>All item of {node.name}</Text>
@@ -33,7 +33,7 @@ const SelectedLabels = () => {
             }
             return;
         })
-    }, [nodesData]);
+    }, [newNodesData]);
 
     return labels;
 };
@@ -42,6 +42,7 @@ export default SelectedLabels;
 
 const styles = StyleSheet.create({
     selectedContainer: {
+        maxWidth: '95%',
         backgroundColor: 'grey',
         borderRadius: 4,
         borderWidth: 1,

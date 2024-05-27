@@ -1,51 +1,57 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useContext, useMemo, useState } from "react";
 import { StyleSheet } from "react-native";
 
 import DefaultButton from "./ui/DefaultButton";
 import CheckBox from "./ui/CheckBox";
 import { TreeNode } from "./utils/generateNode";
 import { StoreContext } from "./Store";
+import { MAX_LEVEL } from "./App";
 
 export interface TreeNodeComponentProps {
     level: number;
     node: TreeNode;
     parentId?: string;
-    isParentChecked?: boolean;
+    parentNode?: TreeNode;
 }
 
-const TreeNodeComponent = ({ level, node, parentId, isParentChecked }: TreeNodeComponentProps) => {
+const TreeNodeComponent = ({ level, node, parentId, parentNode }: TreeNodeComponentProps) => {
 
     // context
-    const { nodeIds, onNodePress, onRemoveNodes } = useContext(StoreContext);
+    const { newNodeIds, onNodePress, onNodeWithoutChildrenPress } = useContext(StoreContext);
 
     // state
     const [expanded, setExpanded] = useState(false);
     const [checked, setChecked] = useState(false);
 
-    const isChecked = useMemo(() => {
-        if (isParentChecked || nodeIds.includes(node.id)) {
-            return true;
-        } else if (parentId && nodeIds.includes(parentId)) {
-            return true;
-        } else if (node.children) {
-            return node.children?.every((item) => nodeIds.includes(item.id));
+    const isChecked = useMemo(() => {        
+        if (newNodeIds?.find(item => item?.id === node?.id)) {
+            return node?.children?.every((item) => newNodeIds?.find(item => item?.id === node?.id)?.children?.includes(item?.id));
+        } else if (parentId && newNodeIds?.find(item => item?.id === parentId)) {
+            return newNodeIds?.find(item => item?.id === parentId)?.children?.includes(node?.id);
         }
         return false;
-    }, [isParentChecked, parentId, checked, node, nodeIds])
+    }, [parentId, checked, node, newNodeIds])
 
 
 
     const onCheckboxPress = useCallback(() => {
-        if (isChecked && node.children) {
-            onRemoveNodes(node.children?.map(item => item.id));
+        if (level >= (MAX_LEVEL - 2)) {
+            if (level == (MAX_LEVEL - 1) && parentNode) {
+                onNodeWithoutChildrenPress({
+                    id: node.id,
+                    level,
+                    name: node.name,
+                }, parentNode, !isChecked);
+            } else {
+                onNodePress({
+                    id: node.id,
+                    level,
+                    name: node.name,
+                }, node, !isChecked);
+            }
+            setChecked(!isChecked);
         }
-        onNodePress({
-            id: node.id,
-            level,
-            name: node.name,
-        }, !isChecked);
-        setChecked(!isChecked);
-    }, [isChecked, node]);
+    }, [isChecked, node, newNodeIds]);
 
     const renderChildren = useMemo(() => {
         if (expanded && node.children) {
@@ -55,7 +61,7 @@ const TreeNodeComponent = ({ level, node, parentId, isParentChecked }: TreeNodeC
                     key={index}
                     node={item}
                     parentId={node.id}
-                    isParentChecked={isChecked}
+                    parentNode={node}
                 />
             ))
         }
@@ -64,7 +70,7 @@ const TreeNodeComponent = ({ level, node, parentId, isParentChecked }: TreeNodeC
 
     return (
         <DefaultButton style={styles.container} onPress={() => setExpanded((prev) => !prev)}>
-            <CheckBox testID={`${node.id}-checkbox`} label={node.name} checked={isChecked} onPress={onCheckboxPress} />
+            <CheckBox testID={`${node.id}-checkbox`} label={node.name} checked={isChecked || false} onPress={onCheckboxPress} />
             {renderChildren}
         </DefaultButton>
     );

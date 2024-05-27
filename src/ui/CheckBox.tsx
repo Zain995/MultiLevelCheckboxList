@@ -1,6 +1,5 @@
 import React, { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
-import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome';
 
 import { defaultColors } from "../styles/colors";
 import Text from "../ui/Text";
